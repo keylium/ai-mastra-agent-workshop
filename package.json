@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build": "mastra build",
-    "dev": "mastra dev --dir src/mastra"
+    "dev": "mastra dev --dir src/mastra",
+    "workflow:run": "node scripts/run-workflow.js",
+    "test:issue": "node scripts/run-issue-tests.js",
+    "test:ai": "npm run workflow:run"
   },
   "keywords": [],
   "author": "Tim Lolkema",

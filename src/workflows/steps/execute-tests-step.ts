@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createStep } from "@mastra/core/workflows";
 import { generateTestPlanStep } from "./generate-test-plan-step";
 import { previewEnvironmentOutputSchema } from "./wait-for-preview-environment-step";
-import { BrowserUseClient } from "browser-use-sdk";
+import { BrowserTestExecutor } from "../../agents/browser-agent";
 
 export const testExecutionOutputSchema = z.object({
   needsTesting: z.boolean(),
@@ -35,58 +35,16 @@ export const executeTestsStep = createStep({
       };
     }
 
-    const client = new BrowserUseClient({
-      apiKey: process.env.BROWSER_USE_API_KEY!,
-    });
-
-    const executedTestCases = await Promise.all(
-      testCases.map(async (testCase) => {
-        try {
-          const taskResponse = await client.tasks.createTask({
-            task: `Navigate to ${context.inputData.previewUrl} and execute this test case: ${testCase.title}. ${testCase.description}`,
-          });
-
-          // Poll for task completion with timeout
-          const POLL_INTERVAL_MS = 2000;
-          const MAX_POLL_TIME_MS = 5 * 60 * 1000; // 5 minutes timeout
-          const startTime = Date.now();
-
-          const pollForCompletion = async (): Promise<any> => {
-            const task = await client.tasks.getTask(taskResponse.id);
-
-            if (task.status === "started" || task.status === "paused") {
-              if (Date.now() - startTime > MAX_POLL_TIME_MS) {
-                throw new Error(
-                  `Task ${taskResponse.id} timed out after ${MAX_POLL_TIME_MS / 1000} seconds`
-                );
-              }
-              await new Promise((resolve) =>
-                setTimeout(resolve, POLL_INTERVAL_MS)
-              );
-              return pollForCompletion();
-            }
-
-            return task;
-          };
-
-          const task = await pollForCompletion();
-
-          // Determine if the test passed based on the result
-          const status = task.isSuccess === true ? "success" : "fail";
-
-          return {
-            title: testCase.title,
-            status: status as "success" | "fail",
-          };
-        } catch (error) {
-          console.error(`Test case "${testCase.title}" failed:`, error);
-          return {
-            title: testCase.title,
-            status: "fail" as const,
-          };
-        }
-      })
+    const browserExecutor = new BrowserTestExecutor();
+    const testResults = await browserExecutor.executeTestSuite(
+      testCases,
+      context.inputData.previewUrl
     );
+
+    const executedTestCases = testResults.map((result) => ({
+      title: result.title,
+      status: result.status,
+    }));
 
     return {
       needsTesting: true,
