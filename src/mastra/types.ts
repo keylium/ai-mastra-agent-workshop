@@ -24,6 +24,16 @@ export interface GitHubFile {
   patch: string;
 }
 
+export interface GitHubIssue {
+  number: number;
+  title: string;
+  body: string;
+  state: string;
+  html_url: string;
+  labels?: Array<{ name: string } | string>;
+  assignees?: Array<{ login: string }>;
+}
+
 export interface GitHubApiResponse<T> {
   data: T;
   status: number;

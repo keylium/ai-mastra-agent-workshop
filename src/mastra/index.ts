@@ -2,6 +2,7 @@ import { Mastra } from "@mastra/core";
 import { VercelDeployer } from "@mastra/deployer-vercel";
 
 import { testplanAgent } from "../agents/testplan-agent";
+import { issueAgent } from "../agents/issue-agent";
 import { prWorkflow } from "../workflows/pull-request-workflow";
 
 if (!process.env.GITHUB_TOKEN) {
@@ -17,7 +18,7 @@ if (!process.env.OPENAI_API_KEY) {
 }
 
 export const mastra = new Mastra({
-  agents: { testplanAgent },
+  agents: { testplanAgent, issueAgent },
   deployer: new VercelDeployer(),
   workflows: {
     prWorkflow,
